@@ -31,6 +31,7 @@ export default function CreateOrderModal({ open, onClose, projectId }: CreateOrd
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
         title: "Успешно",
         description: "Заказ успешно создан",

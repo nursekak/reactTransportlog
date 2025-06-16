@@ -38,9 +38,19 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (projects.length > 0 && !selectedProject) {
-      setSelectedProject(projects[0]);
+      // Find the project that was last selected or use the first one
+      const lastSelectedId = localStorage.getItem('lastSelectedProjectId');
+      const lastProject = lastSelectedId ? projects.find(p => p.id === parseInt(lastSelectedId)) : null;
+      setSelectedProject(lastProject || projects[0]);
     }
   }, [projects, selectedProject]);
+
+  // Save selected project to localStorage
+  useEffect(() => {
+    if (selectedProject) {
+      localStorage.setItem('lastSelectedProjectId', selectedProject.id.toString());
+    }
+  }, [selectedProject]);
 
   if (authLoading || !user) {
     return (

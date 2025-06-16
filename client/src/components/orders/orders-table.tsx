@@ -44,12 +44,12 @@ export default function OrdersTable({ projectId, filters, onEditOrder }: OrdersT
     page: page.toString(),
     limit: "20",
     ...(filters.search && { search: filters.search }),
-    ...(filters.paymentStatus && { paymentStatus: filters.paymentStatus }),
-    ...(filters.deliveryStatus && { deliveryStatus: filters.deliveryStatus }),
+    ...(filters.paymentStatus && filters.paymentStatus !== "all" && { paymentStatus: filters.paymentStatus }),
+    ...(filters.deliveryStatus && filters.deliveryStatus !== "all" && { deliveryStatus: filters.deliveryStatus }),
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["/api/orders", queryParams.toString()],
+    queryKey: ["/api/orders", projectId, filters.search, filters.paymentStatus, filters.deliveryStatus, page],
     queryFn: async () => {
       const response = await fetch(`/api/orders?${queryParams}`);
       if (!response.ok) throw new Error("Failed to fetch orders");

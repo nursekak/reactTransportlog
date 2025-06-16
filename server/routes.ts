@@ -236,6 +236,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/orders/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const orderId = parseInt(req.params.id);
+      
+      // Get order
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Verify order belongs to user's project
+      const project = await storage.getProjectById(order.projectId);
+      if (!project || project.userId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      res.json(order);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.delete("/api/orders/:id", authenticateToken, async (req: any, res) => {
     try {
       const orderId = parseInt(req.params.id);
