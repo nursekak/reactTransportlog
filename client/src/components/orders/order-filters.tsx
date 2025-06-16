@@ -21,8 +21,8 @@ export default function OrderFilters({ filters, onFiltersChange }: OrderFiltersP
   const clearFilters = () => {
     onFiltersChange({
       search: "",
-      paymentStatus: "",
-      deliveryStatus: "",
+      paymentStatus: "all",
+      deliveryStatus: "all",
     });
   };
 
@@ -45,12 +45,12 @@ export default function OrderFilters({ filters, onFiltersChange }: OrderFiltersP
           <Label className="block text-sm font-medium text-gray-700 mb-2">
             Статус оплаты
           </Label>
-          <Select value={filters.paymentStatus} onValueChange={(value) => handleFilterChange("paymentStatus", value)}>
+          <Select value={filters.paymentStatus} onValueChange={(value) => handleFilterChange("paymentStatus", value === "all" ? "" : value)}>
             <SelectTrigger>
               <SelectValue placeholder="Все статусы" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Все статусы</SelectItem>
+              <SelectItem value="all">Все статусы</SelectItem>
               <SelectItem value="unpaid">Не оплачен</SelectItem>
               <SelectItem value="partial">Частично</SelectItem>
               <SelectItem value="paid">Полностью</SelectItem>
@@ -62,12 +62,12 @@ export default function OrderFilters({ filters, onFiltersChange }: OrderFiltersP
           <Label className="block text-sm font-medium text-gray-700 mb-2">
             Статус доставки
           </Label>
-          <Select value={filters.deliveryStatus} onValueChange={(value) => handleFilterChange("deliveryStatus", value)}>
+          <Select value={filters.deliveryStatus} onValueChange={(value) => handleFilterChange("deliveryStatus", value === "all" ? "" : value)}>
             <SelectTrigger>
               <SelectValue placeholder="Все статусы" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Все статусы</SelectItem>
+              <SelectItem value="all">Все статусы</SelectItem>
               <SelectItem value="pending">Ожидает</SelectItem>
               <SelectItem value="shipping">В пути</SelectItem>
               <SelectItem value="delivered">Доставлен</SelectItem>

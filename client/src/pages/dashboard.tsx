@@ -21,8 +21,8 @@ export default function DashboardPage() {
   const [editingOrder, setEditingOrder] = useState<number | null>(null);
   const [filters, setFilters] = useState({
     search: "",
-    paymentStatus: "",
-    deliveryStatus: "",
+    paymentStatus: "all",
+    deliveryStatus: "all",
   });
 
   const { data: projects = [] } = useQuery({
