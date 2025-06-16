@@ -1,0 +1,155 @@
+### Промпт для разработки React-приложения "Логистика заказов"
+
+**Цель:** Создать безопасное React-приложение для управления заказами с интеграцией PostgreSQL через Docker.
+
+---
+
+### **Основные требования**
+1. **Стек технологий:**
+   - **Фронтенд:** React (TypeScript), Redux Toolkit, React Router, Axios
+   - **Бэкенд:** Node.js (Express.js)
+   - **Авторизация:** JWT-токены + HTTP-only cookies
+   - **База данных:** PostgreSQL + Prisma ORM
+   - **Инфраструктура:** Docker + Docker Compose
+
+2. **Функционал:**
+   ```markdown
+   ### 1. Авторизация
+   - Регистрация/вход (логин + пароль)
+   - Защита роутов: доступ только для авторизованных пользователей
+   - Технология: 
+     - JWT-токены с секретным ключом
+     - Хранение токена в HTTP-only cookie (защита от XSS)
+     - Шифрование паролей (bcrypt)
+
+   ### 2. Управление заказами
+   - Добавление заказа с полями:
+     - Наименование (обязательное)
+     - Описание
+     - Ссылка на товар
+     - Статус оплаты (select: "Не оплачен", "Частично", "Полностью")
+     - Статус доставки (select: "Ожидает", "В пути", "Доставлен")
+   - Редактирование статусов оплаты/доставки
+   - Удаление заказа
+
+   ### 3. Управление проектами
+   - Добавление проекта (название + описание)
+   - Выбор проекта в навигации (выпадающий список)
+   - Страница проекта: отображение всех связанных заказов
+
+   ### 4. Отображение данных
+   - Таблица заказов с сортировкой по дате
+   - Фильтрация по статусам оплаты/доставки
+   - Пагинация (20 заказов на странице)
+
+   ### 5. Структура данных
+   ```sql
+   Таблица "User" (id, email, password)
+   Таблица "Project" (id, name, description, userId)
+   Таблица "Order" (
+     id, 
+     date (timestamp), 
+     title, 
+     description, 
+     product_url, 
+     payment_status, 
+     delivery_status, 
+     projectId (FK)
+   ```
+
+   ### 6. Инфраструктура
+   - Docker-контейнер для PostgreSQL
+   - Docker Compose конфигурация:
+     ```yaml
+     services:
+       db:
+         image: postgres:15
+         env_file: .env
+         volumes:
+           - pgdata:/var/lib/postgresql/data
+     ```
+   ```
+
+---
+
+### **API Endpoints (бэкенд)**
+```markdown
+POST /api/auth/register  # Регистрация
+POST /api/auth/login     # Вход
+
+GET  /api/projects       # Список проектов
+POST /api/projects       # Создать проект
+
+GET  /api/orders?projectId={id} # Заказы проекта
+POST /api/orders         # Создать заказ
+PATCH /api/orders/:id    # Обновить статусы
+```
+
+---
+
+### **Компоненты React (фронтенд)**
+```jsx
+// Структура src/
+├── components/
+│   ├── Auth/
+│   │   ├── LoginForm.tsx
+│   │   └── RegisterForm.tsx
+│   ├── Orders/
+│   │   ├── OrderTable.tsx
+│   │   └── OrderForm.tsx
+│   └── Projects/
+│       ├── ProjectSelect.tsx
+│       └── ProjectForm.tsx
+├── pages/
+│   ├── DashboardPage.tsx
+│   ├── ProjectOrdersPage.tsx
+│   └── AuthPage.tsx
+├── store/  # Redux
+│   ├── authSlice.ts
+│   ├── projectSlice.ts
+│   └── orderSlice.ts
+└── hooks/  # Кастомные хуки
+```
+
+---
+
+### **Настройки безопасности**
+1. **CORS:** Ограничить домены фронтенда
+2. **Helmet:** Заголовки безопасности для Express
+3. **Валидация:** Joi для проверки входных данных
+4. **Защита роутов:**
+   ```javascript
+   // Пример middleware
+   const protectRoute = (req, res, next) => {
+     if (!req.user) return res.status(401).json({ error: "Not authorized" });
+     next();
+   };
+   ```
+
+---
+
+### **Инструкция для запуска**
+```bash
+# 1. Создать .env файл с переменными:
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=secret
+POSTGRES_DB=logistics
+
+# 2. Запустить через Docker Compose:
+docker-compose up --build
+
+# 3. Фронтенд (отдельно):
+npm install
+npm start
+```
+
+---
+
+### **Дополнительные улучшения**
+- **Тесты:** Jest + React Testing Library
+- **CI/CD:** GitHub Actions для автоматического тестирования
+- **Логирование:** Winston на бэкенде
+- **Валидация форм:** React Hook Form + Yup
+- **UI-библиотека:** Material UI или Ant Design
+
+Готовый проект должен соответствовать принципам **12 факторов** (12-factor app) и использовать **контейнеризацию** всех сервисов.
