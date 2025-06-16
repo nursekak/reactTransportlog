@@ -54,7 +54,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(projects)
       .where(eq(projects.userId, userId))
-      .orderBy(desc(projects.createdAt));
+      .orderBy(asc(projects.createdAt));
   }
 
   async getProjectById(id: number): Promise<Project | undefined> {
