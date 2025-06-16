@@ -19,6 +19,7 @@ export default function CreateOrderModal({ open, onClose, projectId }: CreateOrd
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [productUrl, setProductUrl] = useState("");
+  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("unpaid");
   const [deliveryStatus, setDeliveryStatus] = useState("pending");
   const { toast } = useToast();
@@ -63,6 +64,7 @@ export default function CreateOrderModal({ open, onClose, projectId }: CreateOrd
       title: title.trim(),
       description: description.trim() || undefined,
       productUrl: productUrl.trim() || undefined,
+      invoiceNumber: invoiceNumber.trim() || undefined,
       paymentStatus,
       deliveryStatus,
       projectId,
@@ -73,6 +75,7 @@ export default function CreateOrderModal({ open, onClose, projectId }: CreateOrd
     setTitle("");
     setDescription("");
     setProductUrl("");
+    setInvoiceNumber("");
     setPaymentStatus("unpaid");
     setDeliveryStatus("pending");
     onClose();
@@ -123,6 +126,19 @@ export default function CreateOrderModal({ open, onClose, projectId }: CreateOrd
               value={productUrl}
               onChange={(e) => setProductUrl(e.target.value)}
               placeholder="https://example.com/product"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="invoiceNumber" className="block text-sm font-medium text-gray-700 mb-2">
+              Номер счета
+            </Label>
+            <Input
+              type="text"
+              id="invoiceNumber"
+              value={invoiceNumber}
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+              placeholder="INV-001"
             />
           </div>
           

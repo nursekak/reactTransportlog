@@ -23,6 +23,7 @@ export const orders = pgTable("orders", {
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   productUrl: varchar("product_url", { length: 1000 }),
+  invoiceNumber: varchar("invoice_number", { length: 100 }),
   paymentStatus: varchar("payment_status", { length: 50 }).notNull().default("unpaid"),
   deliveryStatus: varchar("delivery_status", { length: 50 }).notNull().default("pending"),
   projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
