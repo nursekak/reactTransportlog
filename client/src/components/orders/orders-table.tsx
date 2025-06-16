@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Edit, Trash2, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -57,6 +58,27 @@ export default function OrdersTable({ projectId, filters, onEditOrder }: OrdersT
     },
   });
 
+  const updateOrderStatusMutation = useMutation({
+    mutationFn: async ({ orderId, field, value }: { orderId: number; field: string; value: string }) => {
+      const response = await apiRequest("PATCH", `/api/orders/${orderId}`, { [field]: value });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders", projectId, filters.search, filters.paymentStatus, filters.deliveryStatus, page] });
+      toast({
+        title: "Успешно",
+        description: "Статус обновлен",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить статус",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteOrderMutation = useMutation({
     mutationFn: async (orderId: number) => {
       await apiRequest("DELETE", `/api/orders/${orderId}`);
@@ -83,16 +105,43 @@ export default function OrdersTable({ projectId, filters, onEditOrder }: OrdersT
     }
   };
 
-  const getStatusBadge = (status: string, type: "payment" | "delivery") => {
-    const variant = type === "payment" 
-      ? status === "paid" ? "default" : status === "partial" ? "secondary" : "destructive"
-      : status === "delivered" ? "default" : status === "shipping" ? "secondary" : "outline";
-    
-    const label = type === "payment" 
-      ? paymentStatusLabels[status as keyof typeof paymentStatusLabels]
-      : deliveryStatusLabels[status as keyof typeof deliveryStatusLabels];
+  const handleStatusChange = (orderId: number, field: string, value: string) => {
+    updateOrderStatusMutation.mutate({ orderId, field, value });
+  };
 
-    return <Badge variant={variant} className="status-badge">{label}</Badge>;
+  const StatusSelector = ({ order, type }: { order: Order; type: "payment" | "delivery" }) => {
+    const currentValue = type === "payment" ? order.paymentStatus : order.deliveryStatus;
+    const field = type === "payment" ? "paymentStatus" : "deliveryStatus";
+    const options = type === "payment" 
+      ? [
+          { value: "unpaid", label: "Не оплачен" },
+          { value: "partial", label: "Частично" },
+          { value: "paid", label: "Полностью" }
+        ]
+      : [
+          { value: "pending", label: "Ожидает" },
+          { value: "shipping", label: "В пути" },
+          { value: "delivered", label: "Доставлен" }
+        ];
+
+    return (
+      <Select 
+        value={currentValue} 
+        onValueChange={(value) => handleStatusChange(order.id, field, value)}
+        disabled={updateOrderStatusMutation.isPending}
+      >
+        <SelectTrigger className="w-[120px] h-8">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
   };
 
   if (isLoading) {
@@ -137,6 +186,7 @@ export default function OrdersTable({ projectId, filters, onEditOrder }: OrdersT
             <TableRow>
               <TableHead>Название</TableHead>
               <TableHead>Описание</TableHead>
+              <TableHead>Номер счета</TableHead>
               <TableHead>Дата</TableHead>
               <TableHead>Оплата</TableHead>
               <TableHead>Доставка</TableHead>
@@ -168,13 +218,16 @@ export default function OrdersTable({ projectId, filters, onEditOrder }: OrdersT
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-gray-900">
+                  {order.invoiceNumber || "—"}
+                </TableCell>
+                <TableCell className="text-sm text-gray-900">
                   {format(new Date(order.createdAt), "dd.MM.yyyy", { locale: ru })}
                 </TableCell>
                 <TableCell>
-                  {getStatusBadge(order.paymentStatus, "payment")}
+                  <StatusSelector order={order} type="payment" />
                 </TableCell>
                 <TableCell>
-                  {getStatusBadge(order.deliveryStatus, "delivery")}
+                  <StatusSelector order={order} type="delivery" />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
@@ -252,8 +305,8 @@ export default function OrdersTable({ projectId, filters, onEditOrder }: OrdersT
               </div>
               
               <div className="flex items-center space-x-3">
-                {getStatusBadge(order.paymentStatus, "payment")}
-                {getStatusBadge(order.deliveryStatus, "delivery")}
+                <StatusSelector order={order} type="payment" />
+                <StatusSelector order={order} type="delivery" />
               </div>
             </div>
           </div>
