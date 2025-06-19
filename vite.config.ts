@@ -3,11 +3,7 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-// Получаем имя репозитория из package.json или используем дефолтное значение
-const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'reactTransportlog';
-
 export default defineConfig({
-  base: process.env.NODE_ENV === 'production' ? `/${repoName}/` : '/',
   plugins: [
     react(),
     runtimeErrorOverlay(),
@@ -29,7 +25,7 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname, "client"),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist"),
+    outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
   },
   server: {
