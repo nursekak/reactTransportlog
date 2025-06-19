@@ -34,7 +34,7 @@ export default function LoginPage() {
           </div>
           <h2 className="text-3xl font-bold text-gray-900">Логистика заказов</h2>
           <p className="mt-2 text-gray-600">
-            {isRegisterMode ? "Создайте аккаунт для управления заказами" : "Войдите в систему управления заказами"}
+            {isRegisterMode ? "Создайте аккаунт для управления заказами (требуется одобрение администратора)" : "Войдите в систему управления заказами"}
           </p>
         </div>
         

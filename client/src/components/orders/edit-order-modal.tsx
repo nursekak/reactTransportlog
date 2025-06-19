@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import type { Order } from "@shared/schema";
 
 interface EditOrderModalProps {
   orderId: number;
@@ -19,12 +20,13 @@ export default function EditOrderModal({ orderId, open, onClose }: EditOrderModa
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [productUrl, setProductUrl] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [paymentStatus, setPaymentStatus] = useState("unpaid");
   const [deliveryStatus, setDeliveryStatus] = useState("pending");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: order, isLoading } = useQuery({
+  const { data: order, isLoading } = useQuery<Order>({
     queryKey: [`/api/orders/${orderId}`],
     enabled: open && !!orderId,
     retry: false,
@@ -57,6 +59,7 @@ export default function EditOrderModal({ orderId, open, onClose }: EditOrderModa
       setTitle(order.title || "");
       setDescription(order.description || "");
       setProductUrl(order.productUrl || "");
+      setQuantity(order.quantity || 1);
       setPaymentStatus(order.paymentStatus || "unpaid");
       setDeliveryStatus(order.deliveryStatus || "pending");
     }
@@ -78,6 +81,7 @@ export default function EditOrderModal({ orderId, open, onClose }: EditOrderModa
       title: title.trim(),
       description: description.trim() || undefined,
       productUrl: productUrl.trim() || undefined,
+      quantity,
       paymentStatus,
       deliveryStatus,
     });
@@ -145,6 +149,20 @@ export default function EditOrderModal({ orderId, open, onClose }: EditOrderModa
               value={productUrl}
               onChange={(e) => setProductUrl(e.target.value)}
               placeholder="https://example.com/product"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-2">
+              Количество
+            </Label>
+            <Input
+              type="number"
+              id="quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+              min="1"
+              placeholder="1"
             />
           </div>
           

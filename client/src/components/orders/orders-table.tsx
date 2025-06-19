@@ -187,6 +187,7 @@ export default function OrdersTable({ projectId, filters, onEditOrder }: OrdersT
               <TableHead>Название</TableHead>
               <TableHead>Описание</TableHead>
               <TableHead>Номер счета</TableHead>
+              <TableHead>Количество</TableHead>
               <TableHead>Дата</TableHead>
               <TableHead>Оплата</TableHead>
               <TableHead>Доставка</TableHead>
@@ -219,6 +220,9 @@ export default function OrdersTable({ projectId, filters, onEditOrder }: OrdersT
                 </TableCell>
                 <TableCell className="text-sm text-gray-900">
                   {order.invoiceNumber || "—"}
+                </TableCell>
+                <TableCell className="text-sm text-gray-900">
+                  {order.quantity || 1}
                 </TableCell>
                 <TableCell className="text-sm text-gray-900">
                   {format(new Date(order.createdAt), "dd.MM.yyyy", { locale: ru })}
@@ -290,6 +294,9 @@ export default function OrdersTable({ projectId, filters, onEditOrder }: OrdersT
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">
                   {format(new Date(order.createdAt), "dd.MM.yyyy", { locale: ru })}
+                </span>
+                <span className="text-gray-500">
+                  Количество: {order.quantity || 1}
                 </span>
                 {order.productUrl && (
                   <a

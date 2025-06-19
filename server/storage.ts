@@ -7,11 +7,13 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
+  updateUserStatus(userId: number, status: string): Promise<User | undefined>;
   
   // Project methods
-  getProjectsByUserId(userId: number): Promise<Project[]>;
   getProjectById(id: number): Promise<Project | undefined>;
-  createProject(project: InsertProject & { userId: number }): Promise<Project>;
+  createProject(project: InsertProject): Promise<Project>;
+  getAllProjects(): Promise<Project[]>;
   
   // Order methods
   getOrdersByProject(
@@ -49,12 +51,17 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getProjectsByUserId(userId: number): Promise<Project[]> {
-    return await db
-      .select()
-      .from(projects)
-      .where(eq(projects.userId, userId))
-      .orderBy(asc(projects.createdAt));
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async updateUserStatus(userId: number, status: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ status: status })
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
   }
 
   async getProjectById(id: number): Promise<Project | undefined> {
@@ -62,12 +69,16 @@ export class DatabaseStorage implements IStorage {
     return project || undefined;
   }
 
-  async createProject(project: InsertProject & { userId: number }): Promise<Project> {
+  async createProject(project: InsertProject): Promise<Project> {
     const [newProject] = await db
       .insert(projects)
       .values(project)
       .returning();
     return newProject;
+  }
+
+  async getAllProjects(): Promise<Project[]> {
+    return await db.select().from(projects).orderBy(asc(projects.createdAt));
   }
 
   async getOrdersByProject(

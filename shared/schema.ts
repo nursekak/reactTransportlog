@@ -7,6 +7,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password").notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -14,7 +15,6 @@ export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -23,6 +23,7 @@ export const orders = pgTable("orders", {
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   productUrl: varchar("product_url", { length: 1000 }),
+  quantity: integer("quantity").notNull().default(1),
   invoiceNumber: varchar("invoice_number", { length: 100 }),
   paymentStatus: varchar("payment_status", { length: 50 }).notNull().default("unpaid"),
   deliveryStatus: varchar("delivery_status", { length: 50 }).notNull().default("pending"),
@@ -32,14 +33,9 @@ export const orders = pgTable("orders", {
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
-  projects: many(projects),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
-  user: one(users, {
-    fields: [projects.userId],
-    references: [users.id],
-  }),
   orders: many(orders),
 }));
 
@@ -51,9 +47,13 @@ export const ordersRelations = relations(orders, ({ one }) => ({
 }));
 
 // Schemas
+export const userStatusSchema = z.enum(["pending", "approved", "rejected"]);
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+}).extend({
+  status: userStatusSchema.default("pending"),
 });
 
 export const loginUserSchema = insertUserSchema.pick({
@@ -63,7 +63,6 @@ export const loginUserSchema = insertUserSchema.pick({
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
-  userId: true,
   createdAt: true,
 });
 
@@ -73,14 +72,17 @@ export const insertOrderSchema = createInsertSchema(orders).omit({
 }).extend({
   paymentStatus: z.enum(["unpaid", "partial", "paid"]),
   deliveryStatus: z.enum(["pending", "shipping", "delivered"]),
+  quantity: z.number().int().min(1),
 });
 
 export const updateOrderSchema = insertOrderSchema.partial().extend({
   id: z.number(),
+  quantity: z.number().int().min(1).optional(),
 });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UserStatus = z.infer<typeof userStatusSchema>;
 export type LoginUser = z.infer<typeof loginUserSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;

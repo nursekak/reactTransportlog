@@ -52,7 +52,7 @@ export default function RegisterForm({ onToggleMode }: RegisterFormProps) {
       await register(email, password);
       toast({
         title: "Успешно",
-        description: "Аккаунт успешно создан",
+        description: "Заявка на регистрацию отправлена. Ожидайте одобрения администратора.",
       });
     } catch (error: any) {
       toast({

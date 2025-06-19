@@ -20,6 +20,7 @@ export default function CreateOrderModal({ open, onClose, projectId }: CreateOrd
   const [description, setDescription] = useState("");
   const [productUrl, setProductUrl] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [paymentStatus, setPaymentStatus] = useState("unpaid");
   const [deliveryStatus, setDeliveryStatus] = useState("pending");
   const { toast } = useToast();
@@ -65,6 +66,7 @@ export default function CreateOrderModal({ open, onClose, projectId }: CreateOrd
       description: description.trim() || undefined,
       productUrl: productUrl.trim() || undefined,
       invoiceNumber: invoiceNumber.trim() || undefined,
+      quantity,
       paymentStatus,
       deliveryStatus,
       projectId,
@@ -76,6 +78,7 @@ export default function CreateOrderModal({ open, onClose, projectId }: CreateOrd
     setDescription("");
     setProductUrl("");
     setInvoiceNumber("");
+    setQuantity(1);
     setPaymentStatus("unpaid");
     setDeliveryStatus("pending");
     onClose();
@@ -139,6 +142,20 @@ export default function CreateOrderModal({ open, onClose, projectId }: CreateOrd
               value={invoiceNumber}
               onChange={(e) => setInvoiceNumber(e.target.value)}
               placeholder="INV-001"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-2">
+              Количество
+            </Label>
+            <Input
+              type="number"
+              id="quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+              min="1"
+              placeholder="1"
             />
           </div>
           

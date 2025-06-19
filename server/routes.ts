@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { insertUserSchema, loginUserSchema, insertProjectSchema, insertOrderSchema, updateOrderSchema } from "@shared/schema";
 import { z } from "zod";
+import { db } from "./db";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const SALT_ROUNDS = 10;
@@ -45,31 +46,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password
       const hashedPassword = await bcrypt.hash(userData.password, SALT_ROUNDS);
       
-      // Create user
+      // Create user with pending status
       const user = await storage.createUser({
         ...userData,
         password: hashedPassword,
-      });
-
-      // Generate JWT token
-      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "24h" });
-      
-      // Set HTTP-only cookie
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        status: "pending",
       });
 
       res.status(201).json({ 
         user: { id: user.id, email: user.email },
-        message: "User created successfully" 
+        message: "Registration request submitted. Please wait for approval." 
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid input", errors: error.errors });
       }
+      console.error(error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -88,6 +80,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isValidPassword = await bcrypt.compare(loginData.password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Check if user is approved
+      if (user.status !== "approved") {
+        if (user.status === "pending") {
+          return res.status(403).json({ message: "Your account is pending approval. Please wait for administrator review." });
+        } else if (user.status === "rejected") {
+          return res.status(403).json({ message: "Your registration has been rejected. Please contact administrator." });
+        }
       }
 
       // Generate JWT token
@@ -122,10 +123,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ user: { id: req.user.id, email: req.user.email } });
   });
 
-  // Projects routes
-  app.get("/api/projects", authenticateToken, async (req: any, res) => {
+  // Admin routes for user management
+  app.get("/api/admin/users", authenticateToken, async (req: any, res) => {
     try {
-      const projects = await storage.getProjectsByUserId(req.user.id);
+      // Check if user is admin (you can implement your own admin logic)
+      // For now, we'll allow any authenticated user to see pending users
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id/status", authenticateToken, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { status } = req.body;
+
+      if (!["pending", "approved", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+
+      const updatedUser = await storage.updateUserStatus(userId, status);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Projects routes
+  app.get("/api/projects", authenticateToken, async (_req: any, res) => {
+    try {
+      const projects = await storage.getAllProjects();
       res.json(projects);
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
@@ -137,7 +170,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const projectData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject({
         ...projectData,
-        userId: req.user.id,
       });
       res.status(201).json(project);
     } catch (error) {
@@ -155,12 +187,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!projectId) {
         return res.status(400).json({ message: "Project ID is required" });
-      }
-
-      // Verify project belongs to user
-      const project = await storage.getProjectById(parseInt(projectId));
-      if (!project || project.userId !== req.user.id) {
-        return res.status(403).json({ message: "Access denied" });
       }
 
       const filters = {
@@ -194,12 +220,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const orderData = insertOrderSchema.parse(req.body);
       
-      // Verify project belongs to user
-      const project = await storage.getProjectById(orderData.projectId);
-      if (!project || project.userId !== req.user.id) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
       const order = await storage.createOrder(orderData);
       res.status(201).json(order);
     } catch (error) {
@@ -215,17 +235,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const orderId = parseInt(req.params.id);
       const orderData = updateOrderSchema.parse({ ...req.body, id: orderId });
       
-      // Verify order belongs to user's project
-      const order = await storage.getOrderById(orderId);
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-
-      const project = await storage.getProjectById(order.projectId);
-      if (!project || project.userId !== req.user.id) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
       const updatedOrder = await storage.updateOrder(orderData);
       res.json(updatedOrder);
     } catch (error) {
@@ -246,12 +255,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Order not found" });
       }
 
-      // Verify order belongs to user's project
-      const project = await storage.getProjectById(order.projectId);
-      if (!project || project.userId !== req.user.id) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
       res.json(order);
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
@@ -262,17 +265,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const orderId = parseInt(req.params.id);
       
-      // Verify order belongs to user's project
-      const order = await storage.getOrderById(orderId);
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-
-      const project = await storage.getProjectById(order.projectId);
-      if (!project || project.userId !== req.user.id) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
       await storage.deleteOrder(orderId);
       res.json({ message: "Order deleted successfully" });
     } catch (error) {
